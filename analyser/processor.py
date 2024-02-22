@@ -2,11 +2,37 @@ import os
 import pandas as pd
 import re
 import json
+import dgl
+import networkx as nx
 
 class PolgraphProcessor:
     
     def __init__(self, root_folder_path):
         self.root_folder_path = os.path.expanduser(root_folder_path)
+        
+        
+    def add_density(self, dataframe):
+        density_list = []
+        for bin_file_path in dataframe['bin_file_path']:
+            graphs, _ = dgl.load_graphs(bin_file_path)
+            graph = graphs[0]
+
+            # Remove self-loops
+            graph = dgl.remove_self_loop(graph)
+
+            # Convert graph to networkx format
+            graphx = dgl.to_networkx(graph)
+
+            # Collect graph statistics
+            density = nx.density(graphx)
+            density_list.append(density)
+
+            print(f"The density for the graph at {bin_file_path} is {density}")
+        
+        # Create a new DataFrame with the density column
+        density_df = pd.DataFrame({'density': density_list})
+        return density_df
+        
         
     def extract_params(self, config_json_path):
         with open(config_json_path, "r") as f:
@@ -19,19 +45,6 @@ class PolgraphProcessor:
             config_data.get("epsilon"),
         )
 
-
-    def process_root_folder(self):
-        # Get list of subfolders in the root folder
-        subfolders = [os.path.join(self.root_folder_path, folder) for folder in os.listdir(self.root_folder_path) if os.path.isdir(os.path.join(self.root_folder_path, folder))]
-
-        result_df = pd.DataFrame()
-        
-        # Process each subfolder
-        for subfolder_path in subfolders:
-            subfolder_df = self.process_subfolder(subfolder_path)
-            result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
-        
-        return result_df
 
     def process_subfolder(self, subfolder_path):
         # Get list of files in the subfolder
@@ -85,7 +98,21 @@ class PolgraphProcessor:
             df[['steps', 'duration', 'action', 'undefined', 'converged', 'polarized', 'uid']] = None  
             
         return df
+    
 
+    def process_root_folder(self):
+        # Get list of subfolders in the root folder
+        subfolders = [os.path.join(self.root_folder_path, folder) for folder in os.listdir(self.root_folder_path) if os.path.isdir(os.path.join(self.root_folder_path, folder))]
+
+        result_df = pd.DataFrame()
+        
+        # Process each subfolder
+        for subfolder_path in subfolders:
+            subfolder_df = self.process_subfolder(subfolder_path)
+            result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
+        
+        return result_df
+    
 
 if __name__ == "__main__":
     processor = PolgraphProcessor("~/polygraphs-cache/results/2024-02-21/")
@@ -94,4 +121,9 @@ if __name__ == "__main__":
     df = result_df[['bin_file_path', 'undefined', 'uid', 'epsilon', 'network_size', 'network_kind', 'trials', 'network_kind']]
     print(df)
     print(result_df.columns)
+    df_with_density = processor.add_density(df)
+    result_df = pd.concat([df, df_with_density], axis=1)
+    # df = result_df[['bin_file_path', 'undefined', 'uid', 'epsilon', 'network_size', 'network_kind', 'trials', 'network_kind']]
+    print(result_df)
+    
     
