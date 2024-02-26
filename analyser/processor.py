@@ -4,11 +4,23 @@ import re
 import json
 import dgl
 import networkx as nx
-
+import matplotlib.pyplot as plt
 class PolgraphProcessor:
     
     def __init__(self, root_folder_path):
         self.root_folder_path = os.path.expanduser(root_folder_path)
+        
+    def get_graph(self, filepath):
+        graphs, _ = dgl.load_graphs(filepath)
+        graph = graphs[0]
+
+        # Remove self-loops
+        graph = dgl.remove_self_loop(graph)
+        
+        G = nx.Graph(dgl.to_networkx(graph))
+
+        nx.draw(G, pos=nx.circular_layout(G))
+        plt.show()
         
         
     def add_density(self, dataframe):
@@ -125,5 +137,6 @@ if __name__ == "__main__":
     result_df = pd.concat([df, df_with_density], axis=1)
     # df = result_df[['bin_file_path', 'undefined', 'uid', 'epsilon', 'network_size', 'network_kind', 'trials', 'network_kind']]
     print(result_df)
+    processor.get_graph("/Users/prudhvivuda/polygraphs-cache/results/2024-02-21/a3aa2ab4a9a84396ba683ef2e07a3008/01.bin")
     
     
