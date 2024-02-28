@@ -5,45 +5,84 @@ import json
 import dgl
 import networkx as nx
 import matplotlib.pyplot as plt
-class PolgraphProcessor:
+import h5py
+class PolygraphProcessor:
     
-    def __init__(self, root_folder_path):
-        self.root_folder_path = os.path.expanduser(root_folder_path)
+    def __init__(self):
+        self.root_folder_path = ''
         
-    def get_graph(self, filepath):
-        graphs, _ = dgl.load_graphs(filepath)
-        graph = graphs[0]
-
-        # Remove self-loops
-        graph = dgl.remove_self_loop(graph)
+    def get_graph_object(self, filepath):
+        graph, _ = dgl.load_graphs(filepath)
+        return graph
         
+    
+    def convert_graph_networkx(self, graph):
+        graph = dgl.remove_self_loop(graph[0])
         G = nx.Graph(dgl.to_networkx(graph))
+        return G
+    
+    def get_networkx_object(self, filepath):
+        return self.convert_graph_networkx(self.get_graph_object(filepath))
+        
+    
+    def get_beliefs(self, hd5_file_path, bin_file_path):
+        
+        graph = self.get_graph_object(bin_file_path)
+        G = self.convert_graph_networkx(graph)
+        
+        fp = h5py.File(os.path.join(hd5_file_path), "r")
+        _keys = [int(key) for key in fp["beliefs"].keys()]
+        _keys = sorted(_keys)
+        
+        iterations = [(0, graph[0].ndata["beliefs"])]
 
-        nx.draw(G, pos=nx.circular_layout(G))
-        plt.show()
+        # Iterate over the keys and append to iterations
+        for key in _keys:
+            beliefs = fp["beliefs"][str(key)]
+            # _ = {"iteration": key}
+            iterations.append((key, list(beliefs)))
+        
+            
+        index = pd.MultiIndex.from_product([[0, *_keys], list(G.nodes())], names=['iteration', 'node'])
+        iterations = pd.DataFrame(index=index)
+        iterations.loc[0, 'beliefs'] = graph[0].ndata["beliefs"].tolist()
+
+        # Iterate over the keys and append to iterations
+        for key in _keys:
+            beliefs = fp["beliefs"][str(key)]
+            iterations.loc[key, 'beliefs'] = list(beliefs)
+        
+        return iterations
+            
+    
+    def get_majority(self, iterations):
+        average_by_iteration = iterations.groupby(level='iteration').mean()
+        iterations_above_threshold = average_by_iteration[average_by_iteration['beliefs'] > 0.5]
+        iterations_list = iterations_above_threshold.index.tolist()
+        return iterations_list[0]
+    
+            
+    def add_majority(self, dataframe):
+        majority_list = []
+        
+        for hd5_file_path, bin_file_path in zip(dataframe.hd5_file_path, dataframe.bin_file_path):
+            iterations = self.get_beliefs(hd5_file_path, bin_file_path)
+            majority_list.append(self.get_majority(iterations))
+            
+        dataframe['majority'] = majority_list
+        return dataframe
         
         
+    
     def add_density(self, dataframe):
-        density_list = []
-        for bin_file_path in dataframe['bin_file_path']:
-            graphs, _ = dgl.load_graphs(bin_file_path)
-            graph = graphs[0]
-
-            # Remove self-loops
-            graph = dgl.remove_self_loop(graph)
-
-            # Convert graph to networkx format
-            graphx = dgl.to_networkx(graph)
-
-            # Collect graph statistics
-            density = nx.density(graphx)
-            density_list.append(density)
-
-            print(f"The density for the graph at {bin_file_path} is {density}")
         
-        # Create a new DataFrame with the density column
-        density_df = pd.DataFrame({'density': density_list})
-        return density_df
+        # Calculate density for each graph
+        density_list = [nx.density(self.get_networkx_object(bin_file_path)) for bin_file_path in dataframe['bin_file_path']]
+        
+        # Assign density values to a new column 'density' in the original dataframe
+        dataframe['density'] = density_list
+        
+        return dataframe
         
         
     def extract_params(self, config_json_path):
@@ -59,6 +98,9 @@ class PolgraphProcessor:
 
 
     def process_subfolder(self, subfolder_path):
+        '''
+            processes each simulation the date folder
+        '''
         # Get list of files in the subfolder
         files = os.listdir(subfolder_path)
         
@@ -112,7 +154,12 @@ class PolgraphProcessor:
         return df
     
 
-    def process_root_folder(self):
+    def process_simulations(self, root_folder_path):
+        '''
+            this processes the date folder 
+        '''
+        if root_folder_path:
+            self.root_folder_path = os.path.expanduser(root_folder_path)
         # Get list of subfolders in the root folder
         subfolders = [os.path.join(self.root_folder_path, folder) for folder in os.listdir(self.root_folder_path) if os.path.isdir(os.path.join(self.root_folder_path, folder))]
 
@@ -122,21 +169,15 @@ class PolgraphProcessor:
         for subfolder_path in subfolders:
             subfolder_df = self.process_subfolder(subfolder_path)
             result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
-        
         return result_df
+
     
 
-if __name__ == "__main__":
-    processor = PolgraphProcessor("~/polygraphs-cache/results/2024-02-21/")
-    result_df = processor.process_root_folder()
-    print(result_df)
-    df = result_df[['bin_file_path', 'undefined', 'uid', 'epsilon', 'network_size', 'network_kind', 'trials', 'network_kind']]
-    print(df)
-    print(result_df.columns)
-    df_with_density = processor.add_density(df)
-    result_df = pd.concat([df, df_with_density], axis=1)
-    # df = result_df[['bin_file_path', 'undefined', 'uid', 'epsilon', 'network_size', 'network_kind', 'trials', 'network_kind']]
-    print(result_df)
-    processor.get_graph("/Users/prudhvivuda/polygraphs-cache/results/2024-02-21/a3aa2ab4a9a84396ba683ef2e07a3008/01.bin")
     
-    
+#####################################################################################
+'''
+to process the simulations: PolygraphProcessor().process_simulations('~/polygraphs-cache/results/2024-02-21/')
+to get the density: processor.add_density(df) -> returns desnity_df with density column added 
+to get the graph: processor.get_graph(result_df['bin_file_path'][1]) -> return graph obbject
+
+'''
