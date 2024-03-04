@@ -6,7 +6,7 @@ import json
 
 class SimulationProcessor:
     def __init__(self, graph_converter, belief_processor):
-        self.root_folder_path = ''
+        self.path = ''
         self.dataframe = None
         self.graph_converter = graph_converter
         self.belief_processor = belief_processor
@@ -22,16 +22,31 @@ class SimulationProcessor:
             config_data.get("epsilon"),
         )
 
-    def process_simulations(self, root_folder_path):
-        if root_folder_path:
-            self.root_folder_path = os.path.expanduser(root_folder_path)
-
-        subfolders = [os.path.join(self.root_folder_path, folder) for folder in os.listdir(self.root_folder_path) if os.path.isdir(os.path.join(self.root_folder_path, folder))]
+    def process_simulations(self, path):
+        if path:
+            self.path = os.path.expanduser(path)
+            
         result_df = pd.DataFrame()
-
-        for subfolder_path in subfolders:
-            subfolder_df = self.process_subfolder(subfolder_path)
-            result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
+        
+        root_folder = path.split('/')[-1]
+        
+        if len(root_folder) == 10 and '-' in root_folder:
+            subfolders = [os.path.join(self.path, folder) for folder in os.listdir(self.path) if os.path.isdir(os.path.join(self.path, folder))]
+            for subfolder_path in subfolders:
+                subfolder_df = self.process_subfolder(subfolder_path)
+                result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
+        else:
+            path = os.path.expanduser(path)
+            date_folders = os.listdir(path)
+            date_folders = [os.path.join(path, folder) for folder in date_folders if len(folder) == 10 and '-' in folder]
+            sim_folders = []
+            for date_folder_name in date_folders:
+                for folder in os.listdir(date_folder_name):
+                    subfolders = [os.path.join(date_folder_name, folder) for folder in os.listdir(date_folder_name) if os.path.isdir(os.path.join(date_folder_name, folder))]
+                sim_folders.extend(subfolders)
+            for subfolder_path in sim_folders:
+                subfolder_df = self.process_subfolder(subfolder_path)
+                result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
 
         self.dataframe = result_df
 
