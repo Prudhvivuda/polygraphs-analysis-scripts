@@ -67,6 +67,7 @@ class SimulationProcessor:
                 print("Warning: Number of rows in data.csv does not match the number of bin and hd5 files.")
             df = pd.concat([df[:num_files], csv_df], axis=1)
         else:
-            df[['steps', 'duration', 'action', 'undefined', 'converged', 'polarized', 'uid']] = None
+            df[['steps', 'duration', 'action', 'undefined', 'converged', 'polarized']] = None
+            df['uid'] = subfolder_path.split('/')[-1]
 
         return df

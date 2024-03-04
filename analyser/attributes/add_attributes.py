@@ -1,4 +1,5 @@
 import networkx as nx
+import json 
 
 class AddAttributes:
     def __init__(self, graph_converter, belief_processor):
@@ -18,3 +19,24 @@ class AddAttributes:
     
     def custom(self, dataframe):
         pass
+    
+    
+    def add_from_config(self, key_path):
+        values = []
+        for congif_path in self.dataframe['config_json_path']:
+            with open(congif_path, 'r') as file:
+                json_str = file.read()
+            json_obj = json.loads(json_str)
+            keys = key_path.split('.')
+            value = None
+            current_obj = json_obj
+            for key in keys:
+                if key in current_obj:
+                    current_obj = current_obj[key]
+                    value = current_obj
+                else:
+                    value = None
+                    break
+            values.append(value)
+        column_name = key_path.replace('.', '_').replace(' ', '')
+        self.dataframe[column_name] = values
