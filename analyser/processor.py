@@ -15,7 +15,7 @@ class PolygraphAnalysis(SimulationProcessor, AddAttributes):
     def add(self, *methods):
         def function(self, func):
             def _wrapper(*args, **kwargs):
-                func(self.dataframe, *args, **kwargs)
+                func(self, *args, **kwargs)
             return _wrapper
     
         for method in methods:
