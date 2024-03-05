@@ -13,8 +13,13 @@ class PolygraphAnalysis(SimulationProcessor, AddAttributes):
         self.process_simulations(root_folder_path)
         
     def add(self, *methods):
+        def function(self, func):
+            def _wrapper(*args, **kwargs):
+                func(self.dataframe, *args, **kwargs)
+            return _wrapper
+    
         for method in methods:
-            method(self.dataframe)
+            function(self, method)
 
     def get(self):
         return self.dataframe
