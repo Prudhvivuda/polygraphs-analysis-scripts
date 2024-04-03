@@ -22,7 +22,8 @@ from .complex import (
     UnreliableNetworkBasicAlignedUniformOp,
     UnreliableNetworkBasicAlignedBinomialOp,
     UnreliableNetworkBasicAlignedNegativeEpsOp,
-    UnreliableNetworkBasicUnalignedUniformOp
+    UnreliableNetworkBasicUnalignedUniformOp,
+    ModifiedUnreliableNetworkBasicUnalignedUniformOp
 )
 
 
@@ -44,7 +45,8 @@ __all__ = [
     "UnreliableNetworkBasicAlignedNegativeEpsOp",
     "UnreliableNetworkBasicUnalignedUniformOp",
     "BalaGoyalWeightedOp",
-    "BalaGoyalWeighted2Op"
+    "BalaGoyalWeighted2Op",
+    "ModifiedUnreliableNetworkBasicUnalignedUniformOp"
 ]
 
 
