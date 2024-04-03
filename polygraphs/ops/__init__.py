@@ -30,6 +30,7 @@ from .weightedops import BalaGoyalWeighted2Op, BalaGoyalWeightedOp
 __all__ = [
     "PolyGraphOp",
     "BalaGoyalOp",
+    "IdealOp",
     "NoOp",
     "OConnorWeatherallOp",
     "OConnorWeatherallSquareRootDistanceOp",
