@@ -462,3 +462,36 @@ class UnreliableNetworkBasicUnalignedUniformOp(BalaGoyalOp):
             return {"beliefs": posterior}
 
         return function
+
+
+'''
+def reducefn(self):
+    """
+    Reduce function
+    """
+
+    def function(nodes):
+        # Log probability of successful trials
+        logits = nodes.data["logits"]
+        # Prior, P(H) (aka. belief)
+        prior = nodes.data["beliefs"]
+
+        # Aggregate evidence from all neighbors
+        aggregated_values = torch.sum(nodes.mailbox["payoffs"][:, :, 0], dim=1)
+        aggregated_trials = torch.sum(nodes.mailbox["payoffs"][:, :, 1], dim=1)
+
+        # Evidence, E
+        evidence = math.Evidence(logits, aggregated_values, aggregated_trials)
+
+        # Aggregate trust from all neighbors
+        aggregated_trust = torch.mean(nodes.mailbox["trust"], dim=1)
+
+        # Compute posterior belief using Jeffrey's rule
+        posterior = math.jeffrey(prior, evidence, aggregated_trust)
+
+        # Return posterior beliefs for each neighbour
+        return {"beliefs": posterior}
+
+    return function
+
+'''
