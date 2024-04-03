@@ -11,7 +11,8 @@ from .common import (
     BalaGoyalOp,
     OConnorWeatherallOp,
     OConnorWeatherallSquareRootDistanceOp,
-    OConnorWeatherallSquareDistanceOp
+    OConnorWeatherallSquareDistanceOp,
+    IdealOp
 )
 
 from .complex import (

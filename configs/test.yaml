@@ -17,4 +17,5 @@ simulation.repeats: 5
 # Set seed
 seed: 123456789
 # Set model
-op: "BalaGoyalOp"
+reliability: 1
+op: "IdealOp"
