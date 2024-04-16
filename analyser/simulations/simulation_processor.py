@@ -10,6 +10,12 @@ class SimulationProcessor:
         self.dataframe = None
         self.graph_converter = graph_converter
         self.belief_processor = belief_processor
+        
+    def _is_valid_uuid_folder(self, dirname):
+        # Check if the folder name is a valid UUID format
+        if len(dirname) == 32 and all(c in '0123456789abcdefABCDEF' for c in dirname):
+            return True
+        return False
     
     def extract_params(self, config_json_path):
         with open(config_json_path, "r") as f:
@@ -22,7 +28,7 @@ class SimulationProcessor:
             config_data.get("epsilon"),
         )
 
-    def process_simulations(self, path):
+    def process_simulations_old(self, path):
         if path:
             self.path = os.path.expanduser(path)
             
@@ -47,6 +53,28 @@ class SimulationProcessor:
             for subfolder_path in sim_folders:
                 subfolder_df = self.process_subfolder(subfolder_path)
                 result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
+
+        self.dataframe = result_df
+    
+    def process_simulations(self, path):
+        if path:
+            self.path = os.path.expanduser(path)
+        
+        uuid_folders = []
+        try:
+            for dirpath, dirnames, filenames in os.walk(self.path):
+                for dirname in dirnames:
+                    folder_path = os.path.join(dirpath, dirname)
+                    if self._is_valid_uuid_folder(dirname):
+                        uuid_folders.append(folder_path)
+        except (FileNotFoundError, PermissionError) as e:
+            print(f"Error accessing folder: {e}")
+            
+        result_df = pd.DataFrame()
+        
+        for folder in uuid_folders:
+            subfolder_df = self.process_subfolder(folder)
+            result_df = pd.concat([result_df, subfolder_df], ignore_index=True)
 
         self.dataframe = result_df
 
