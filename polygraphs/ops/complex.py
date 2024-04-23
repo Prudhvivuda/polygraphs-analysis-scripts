@@ -464,7 +464,7 @@ class UnreliableNetworkBasicUnalignedUniformOp(BalaGoyalOp):
         return function
 
 
-class ModifiedUnreliableNetworkBasicUnalignedUniformOp(BalaGoyalOp):
+class ModifiedUnreliableNetworkBasicAlignedUniformOp(BalaGoyalOp):
     """
     Unreliable networks, Part 3
 
@@ -551,12 +551,9 @@ class ModifiedUnreliableNetworkBasicUnalignedUniformOp(BalaGoyalOp):
 
             # Evidence, E
             evidence = math.Evidence(logits, aggregated_values, aggregated_trials)
-
-            # Aggregate trust from all neighbors
-            aggregated_trust = torch.mean(nodes.mailbox["trust"], dim=1)
-
+            
             # Compute posterior belief using Jeffrey's rule
-            posterior = math.jeffrey(prior, evidence, aggregated_trust)
+            posterior = math.jeffrey(prior, evidence, self._reliability)
 
             # Return posterior beliefs for each neighbour
             return {"beliefs": posterior}
