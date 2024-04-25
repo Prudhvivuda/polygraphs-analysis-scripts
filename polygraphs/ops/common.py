@@ -112,7 +112,7 @@ class IdealOp(core.PolyGraphOp):
             # Get the payoffs from source nodes
             payoffs = edges.src["payoffs"]
             # Filter messages sent by reliable nodes
-            return torch.gt(payoffs[:, 1], 0.0) * reliability
+            return (torch.gt(payoffs[:, 1], 0.0) * reliability).bool()
 
         return function
 
